@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+# build [-oc] -- build presentation.html from presentation.md
+# [-o] open presenation.html after
+# [-c] clear knitr cache before making
+
+revealjs=reveal.js
+cache=.cache
+figs=figs
+open_after=false
+html_name=presentation.html
+
+
+function make_slides {
+	# rmarkdown to markdown
+	Rscript -e 'knitr::knit("presentation.Rmd", output="presentation.md")'
+
+	# markdown to html
+	pandoc -o $revealjs/index.html \
+		-t revealjs --section-divs -V theme="simple" \
+		-c static/style.css -H static/font.html \
+		presentation.md
+
+	if [ ! -e "$html_name" ] ; then
+		ln -s $revealjs/index.html $html_name
+	fi
+}
+
+
+while getopts ":co" opt; do
+		case "$opt" in
+				c)
+						rm -rf $cache $figs
+						;;
+				o)
+						open_after=true
+						;;
+				\?)
+						echo "Invalid option: -$OPTARG" >&2
+						;;
+		esac
+done
+
+make_slides
+
+if [ "$open_after" = true ] ; then
+	open $html_name
+fi
